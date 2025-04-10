@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: linear-gradient(-45deg, #ff9a9e, #fad0c4, #fbc2eb, #a18cd1);
+            background-size: 400% 400%;
+            animation: gradientBG 10s ease infinite;
+            color: #fff;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        h1 {
+            margin: 20px 0;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
+        }
+
+        #game-board {
+            display: grid;
+            grid-template-columns: repeat(3, 120px);
+            grid-gap: 15px;
+            justify-content: center;
+            margin: 30px auto;
+        }
+
+        .cell {
+            width: 120px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #fff;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .cell:hover {
+            transform: translateY(-5px);
+            background-color: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 8px 25px rgba(255, 255, 255, 0.5);
+        }
+
+        .cell.disabled {
+            pointer-events: none;
+        }
+
+        .cell.X {
+            color: #ff6b6b;
+            text-shadow: 2px 2px 10px rgba(255, 107, 107, 0.8);
+            animation: pulseX 0.5s infinite alternate;
+        }
+
+        .cell.O {
+            color: #1dd1a1;
+            text-shadow: 2px 2px 10px rgba(29, 209, 161, 0.8);
+            animation: pulseO 0.5s infinite alternate;
+        }
+
+        @keyframes pulseX {
+            from { transform: scale(1); }
+            to { transform: scale(1.1); }
+        }
+
+        @keyframes pulseO {
+            from { transform: scale(1); }
+            to { transform: scale(1.1); }
+        }
+
+        #score-board {
+            margin: 20px;
+            font-size: 1.5em;
+            text-shadow: 1px 1px 5px rgba(0, 0, 0, 0.5);
+        }
+
+        #winner-message {
+            font-size: 2em;
+            color: #948b40;
+            text-shadow: 2px 2px 15px rgba(255, 235, 59, 1);
+            margin-top: 20px;
+            opacity: 0;
+            transform: scale(0);
+            animation: popUp 1s forwards ease-in-out;
+        }
+
+        @keyframes popUp {
+            0% { opacity: 0; transform: scale(0); }
+            50% { opacity: 0.7; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        button {
+            background: linear-gradient(to right, #ff6a00, #ee0979);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            cursor: pointer;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: background 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        button:hover {
+            transform: translateY(-5px);
+            background: linear-gradient(to right, #ee0979, #ff6a00);
+            box-shadow: 0 8px 25px rgba(255, 20, 147, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <h1>✨ Tic-Tac-Toe ✨</h1>
+    <div id="score-board">
+        Player X: <span id="score-x">0</span> | Player O: <span id="score-o">0</span>
+    </div>
+    <div id="game-board">
+    </div>
+    <div id="winner-message"></div>
+    <button id="restart-button">Restart Game</button>
+    <script>
+        const gameBoard = document.getElementById("game-board");
+        const winnerMessage = document.getElementById("winner-message");
+        const scoreX = document.getElementById("score-x");
+        const scoreO = document.getElementById("score-o");
+        const restartButton = document.getElementById("restart-button");
+
+        let currentPlayer = "X";
+        let scores = { X: 0, O: 0 };
+        let board = ["", "", "", "", "", "", "", "", ""];
+
+        function createBoard() {
+            gameBoard.innerHTML = "";
+            board.forEach((cell, index) => {
+                const cellElement = document.createElement("div");
+                cellElement.classList.add("cell");
+                cellElement.dataset.index = index;
+                cellElement.addEventListener("click", handleMove);
+                cellElement.textContent = cell;
+                gameBoard.appendChild(cellElement);
+            });
+        }
+
+        function handleMove(event) {
+            const index = event.target.dataset.index;
+            if (board[index] === "") {
+                board[index] = currentPlayer;
+                event.target.textContent = currentPlayer;
+                event.target.classList.add(currentPlayer, "disabled");
+                if (checkWin(currentPlayer)) {
+                    winnerMessage.textContent = `✨ Congratulations! Player ${currentPlayer} wins! ✨`;
+                    winnerMessage.style.animation = "popUp 1s forwards ease-in-out";
+                    scores[currentPlayer]++;
+                    updateScore();
+                    resetBoard();
+                } else if (board.every(cell => cell !== "")) {
+                    winnerMessage.textContent = "🤝 It's a draw!";
+                    resetBoard();
+                } else {
+                    currentPlayer = currentPlayer === "X" ? "O" : "X";
+                }
+            }
+        }
+
+        function checkWin(player) {
+            const winningCombinations = [
+                [0, 1, 2],
+                [3, 4, 5],
+                [6, 7, 8],
+                [0, 3, 6],
+                [1, 4, 7],
+                [2, 5, 8],
+                [0, 4, 8],
+                [2, 4, 6],
+            ];
+            return winningCombinations.some(combination =>
+                combination.every(index => board[index] === player)
+            );
+        }
+
+        function updateScore() {
+            scoreX.textContent = scores.X;
+            scoreO.textContent = scores.O;
+        }
+
+        function resetBoard() {
+            board = ["", "", "", "", "", "", "", "", ""];
+            currentPlayer = "X";
+            setTimeout(() => {
+                winnerMessage.textContent = "";
+                createBoard();
+            }, 2000);
+        }
+
+        restartButton.addEventListener("click", () => {
+            scores = { X: 0, O: 0 };
+            updateScore();
+            resetBoard();
+        });
+
+        createBoard();
+    </script>
+</body>
+</html>
